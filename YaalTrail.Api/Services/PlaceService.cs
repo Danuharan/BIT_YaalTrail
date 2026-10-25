@@ -21,17 +21,31 @@ public class PlaceService : IPlaceService
 
     private readonly AppDbContext _db;
     private readonly TimeProvider _clock;
+    private readonly ICatalogueCache _cache;
 
-    public PlaceService(AppDbContext db, TimeProvider clock)
+    public PlaceService(AppDbContext db, TimeProvider clock, ICatalogueCache cache)
     {
         _db = db;
         _clock = clock;
+        _cache = cache;
     }
+
+    // The fields needed to filter, search, sort and show the catalogue.
+    private record PlaceSummary(
+        int Id,
+        string Name,
+        string? Description,
+        int CategoryId,
+        string Category,
+        decimal DistanceKm,
+        string? PhotoUrl,
+        decimal EntryFee);
 
     public async Task<PlaceListResponseDto> GetPlacesAsync(string? categories, string? search, string? sort)
     {
-        // FR-07: visitors only ever see published places.
-        IQueryable<Place> query = _db.Places.AsNoTracking().Where(p => p.IsPublished);
+        // NFR-02: all published places come from the cache (or one SQL query);
+        // filtering, search and sorting are then done in memory.
+        IEnumerable<PlaceSummary> query = await GetPublishedPlacesAsync();
 
         // FR-02: filter by one or more category ids, e.g. "1,2".
         List<int> categoryIds = ParseIds(categories);
@@ -41,45 +55,56 @@ public class PlaceService : IPlaceService
         // FR-04: case-insensitive keyword match on name or description.
         if (!string.IsNullOrWhiteSpace(search))
         {
-            string pattern = $"%{search.Trim()}%";
+            string term = search.Trim();
             query = query.Where(p =>
-                EF.Functions.ILike(p.Name, pattern) ||
-                (p.Description != null && EF.Functions.ILike(p.Description, pattern)));
+                p.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (p.Description != null && p.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
 
         // FR-03: sort by name, or by distance (default).
         query = sort?.ToLowerInvariant() == "name"
-            ? query.OrderBy(p => p.Name)
-            : query.OrderBy(p => p.DistanceKm).ThenBy(p => p.Name);
+            ? query.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            : query.OrderBy(p => p.DistanceKm).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase);
 
         // FR-01: name, category, distance and a representative photo.
-        var rows = await query
-            .Select(p => new
-            {
-                p.Id,
-                p.Name,
-                Category = p.Category!.Name,
-                p.DistanceKm,
-                PhotoUrl = p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
-                p.EntryFee,
-            })
-            .ToListAsync();
-
-        var items = rows
-            .Select(r => new PlaceListItemDto(r.Id, r.Name, r.Category, r.DistanceKm, r.PhotoUrl, FormatEntryFee(r.EntryFee)))
+        var items = query
+            .Select(p => new PlaceListItemDto(p.Id, p.Name, p.Category, p.DistanceKm, p.PhotoUrl, FormatEntryFee(p.EntryFee)))
             .ToList();
 
         // FR-05: number of places matching the filter and search.
         return new PlaceListResponseDto(items.Count, items);
     }
 
+    // FR-07: only published places. One SQL query: the category name is a JOIN
+    // and the first photo is a sub-query, so there is no N+1 problem.
+    private Task<IReadOnlyList<PlaceSummary>> GetPublishedPlacesAsync()
+    {
+        return _cache.GetOrLoadAsync<IReadOnlyList<PlaceSummary>>(CatalogueCache.PublishedPlacesKey, async () =>
+            await _db.Places
+                .AsNoTracking()
+                .Where(p => p.IsPublished)
+                .Select(p => new PlaceSummary(
+                    p.Id,
+                    p.Name,
+                    p.Description,
+                    p.CategoryId,
+                    p.Category!.Name,
+                    p.DistanceKm,
+                    p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
+                    p.EntryFee))
+                .ToListAsync());
+    }
+
     public async Task<PlaceDetailDto?> GetPlaceAsync(int id)
     {
+        // NFR-02: one SQL query (JOINs) for the place, its category, photos and hours.
+        // Not cached, because isOpenNow below must use the current time (FR-09).
         Place? place = await _db.Places
             .AsNoTracking()
             .Include(p => p.Category)
             .Include(p => p.Images)
             .Include(p => p.OpeningHours)
+            .AsSingleQuery()
             .FirstOrDefaultAsync(p => p.Id == id && p.IsPublished); // FR-07
 
         if (place == null)

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>YaalTrail – One-day visits around Chundikuli, Jaffna</title>
+    <link rel="stylesheet" href="css/site.css">
+    <script type="module" src="js/app.js"></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to places</a>
+
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="header-top">
+                <div class="brand">
+                    <h1 class="brand-name">YaalTrail</h1>
+                    <p class="brand-tag">One-day visits around Chundikuli, Jaffna</p>
+                </div>
+
+                <div class="header-tools">
+                    <!-- FR-04: keyword search -->
+                    <div class="search-field">
+                        <label for="search-input" class="visually-hidden">Search places by name or description</label>
+                        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+                            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        <input id="search-input" type="search" placeholder="Search places" autocomplete="off">
+                    </div>
+
+                    <!-- FR-03: sort order -->
+                    <div class="sort-field">
+                        <label for="sort-select">Sort</label>
+                        <select id="sort-select">
+                            <option value="distance">Nearest first</option>
+                            <option value="name">Name (A–Z)</option>
+                        </select>
+                    </div>
+
+                    <!-- Day-plan counter (planner comes later) -->
+                    <button id="plan-button" type="button" class="plan-button">
+                        <span>Day plan</span>
+                        <span id="plan-count" class="badge">0</span>
+                        <span class="visually-hidden">places</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- FR-02: multi-select category filter -->
+            <div id="category-chips" class="chips" role="group" aria-label="Filter by category"></div>
+        </div>
+    </header>
+
+    <main id="main" class="page" tabindex="-1">
+        <h2 class="visually-hidden">Places</h2>
+        <!-- FR-05: number of matching places -->
+        <p id="result-count" class="result-count" aria-live="polite"></p>
+        <!-- FR-06: empty-state and error messages -->
+        <div id="list-message" class="list-message" hidden></div>
+        <!-- FR-01: place cards -->
+        <ul id="place-list" class="place-grid"></ul>
+    </main>
+
+    <!-- FR-08: place detail -->
+    <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title">
+        <div id="detail-content" class="detail"></div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

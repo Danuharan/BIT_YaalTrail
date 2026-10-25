@@ -6,8 +6,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+// Development only: count SQL queries per request (see the logging middleware below).
+builder.Services.AddScoped<SqlQueryCounter>();
+
+builder.Services.AddDbContext<AppDbContext>((services, options) =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"));
+
+    if (builder.Environment.IsDevelopment())
+        options.AddInterceptors(new SqlQueryCountingInterceptor(services.GetRequiredService<SqlQueryCounter>()));
+});
+
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICatalogueCache, CatalogueCache>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -40,6 +51,20 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Log how many SQL queries each API request needed (NFR-02 check).
+    app.Use(async (context, next) =>
+    {
+        await next();
+
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            var counter = context.RequestServices.GetRequiredService<SqlQueryCounter>();
+            app.Logger.LogInformation("{Method} {Path}{Query} -> {Status}: {Count} SQL queries",
+                context.Request.Method, context.Request.Path, context.Request.QueryString,
+                context.Response.StatusCode, counter.Count);
+        }
+    });
 }
 
 app.UseHttpsRedirection();
