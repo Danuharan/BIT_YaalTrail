@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>YaalTrail Admin Console</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <script type="module" src="js/admin/admin.js"></script>
+</head>
+<body>
+    <a class="skip-link" href="#admin-main">Skip to content</a>
+
+    <!-- SRS 3.1: a different header colour and an "Admin Console" label, so it is
+         clearly not the visitor site. The signed-in admin and Sign out are on every screen. -->
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <p class="admin-brand">
+                <span class="admin-brand-name">YaalTrail</span>
+                <span class="admin-badge">Admin Console</span>
+            </p>
+
+            <nav id="admin-nav" class="admin-nav" aria-label="Admin sections" hidden>
+                <a id="nav-places" href="#/places">Places</a>
+                <a id="nav-categories" href="#/categories">Categories</a>
+            </nav>
+
+            <div id="admin-user" class="admin-user" hidden>
+                <p class="admin-user-text">
+                    <span class="visually-hidden">Signed in as </span>
+                    <span id="admin-user-name" class="admin-user-name"></span>
+                    <span id="admin-user-email" class="admin-user-email"></span>
+                </p>
+                <button id="sign-out" type="button" class="button button-on-dark">Sign out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- FR-55: shown 2 minutes before the automatic sign-out. -->
+    <div id="idle-warning" class="idle-warning" role="alert" hidden>
+        <p id="idle-warning-text"></p>
+        <button id="stay-signed-in" type="button" class="button button-primary button-small">Stay signed in</button>
+    </div>
+
+    <main id="admin-main" class="admin-main" tabindex="-1">
+        <!-- SRS 4.7: sign-in -->
+        <section id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
+            <div class="login-card">
+                <h1 id="login-title" class="screen-title">Administrator sign-in</h1>
+                <p class="muted">Sign in to manage places and categories.</p>
+
+                <!-- Why the admin was signed out (idle, expired, signed out). -->
+                <p id="login-reason" class="message message-info live-region" role="status"></p>
+
+                <form id="login-form" class="login-form" novalidate>
+                    <div class="field">
+                        <label for="login-email">Email</label>
+                        <input id="login-email" type="email" autocomplete="username" required maxlength="256">
+                    </div>
+                    <div class="field">
+                        <label for="login-password">Password</label>
+                        <input id="login-password" type="password" autocomplete="current-password" required maxlength="200">
+                    </div>
+                    <!-- FR-53: always the server's generic message. -->
+                    <p id="login-error" class="message message-error live-region" role="alert"></p>
+                    <button id="login-submit" type="submit" class="button button-primary">Sign in</button>
+                </form>
+
+                <p class="login-footer"><a href="/">Back to the visitor site</a></p>
+            </div>
+        </section>
+
+        <div id="app-screen" hidden>
+            <!-- Live regions stay in the page (empty ones take no space) so screen readers announce new text. -->
+            <div id="admin-status" class="message message-info live-region" role="status"></div>
+            <div id="admin-alert" class="message message-error live-region" role="alert"></div>
+            <div id="screen" class="screen"></div>
+        </div>
+    </main>
+
+    <!-- FR-41, FR-46: confirmation before deleting. Filled in by js/admin/confirmDialog.js. -->
+    <dialog id="confirm-dialog" class="confirm-dialog"></dialog>
+</body>
+</html>

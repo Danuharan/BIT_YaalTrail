@@ -1,0 +1,901 @@
+/* YaalTrail Admin Console (SRS 3.1, 4.6, 4.7)
+   Deliberately different from the green visitor site: dark indigo header and an
+   "Admin Console" badge. NFR-21: works from 360px wide without sideways scrolling.
+   NFR-25: every text/background pair has a contrast ratio of at least 4.5:1,
+   and every control shows a visible keyboard focus outline. */
+
+/* ---------- Design tokens ---------- */
+:root {
+    --bg: #f3f3f7;
+    --surface: #ffffff;
+    --text: #1b1b29;
+    --muted: #4b4b63;          /* 8.0:1 on white */
+    --border: #cfd0dc;
+    --border-strong: #6b6c85;  /* form control borders, 3:1+ against white */
+
+    --header-bg: #1f1b3a;      /* admin header, white text 15:1 */
+    --header-text: #ffffff;
+    --header-muted: #d4d1ee;   /* 10:1 on the header */
+    --badge-bg: #f5c542;
+    --badge-text: #1f1b3a;
+
+    --primary: #4338ca;        /* 7.4:1 on white */
+    --primary-hover: #3730a3;
+    --primary-tint: #e9e8fb;
+    --on-primary: #ffffff;
+
+    --danger: #a31515;         /* 7.4:1 on white */
+    --danger-hover: #7f1010;
+    --danger-tint: #fdecea;
+
+    --ok-bg: #e6f4ea;
+    --ok-fg: #146c2e;          /* 6.1:1 on --ok-bg */
+    --draft-bg: #fff6e0;
+    --draft-fg: #5c4100;       /* 8.6:1 on --draft-bg */
+
+    --info-bg: #e9e8fb;
+    --info-fg: #2e2885;
+
+    --focus: #1a56db;
+    --radius: 10px;
+    --radius-small: 6px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 12px rgba(16, 24, 40, 0.06);
+    --page-width: 1200px;
+
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 100%;
+}
+
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    overflow-wrap: break-word;
+}
+
+h1, h2, p {
+    margin: 0;
+}
+
+input,
+select,
+textarea,
+button {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: var(--primary);
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.muted,
+.hint {
+    color: var(--muted);
+}
+
+.hint {
+    font-size: 0.875rem;
+}
+
+.skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--surface);
+    color: var(--primary);
+    border-radius: var(--radius-small);
+    font-weight: 700;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}
+
+/* ---------- Header ---------- */
+.admin-header {
+    background: var(--header-bg);
+    color: var(--header-text);
+}
+
+.admin-header :focus-visible {
+    outline-color: #ffffff;
+}
+
+.admin-header-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+}
+
+.admin-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.admin-brand-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.admin-badge {
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--badge-bg);
+    color: var(--badge-text);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.admin-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--radius-small);
+    color: var(--header-text);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-nav a:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--header-text);
+}
+
+/* Current section: underline AND background, not colour alone. */
+.admin-nav a[aria-current="page"] {
+    background: rgba(255, 255, 255, 0.18);
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 6px;
+}
+
+.admin-user {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-left: auto;
+}
+
+.admin-user-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    min-width: 0;
+}
+
+.admin-user-name {
+    font-weight: 700;
+}
+
+.admin-user-email {
+    color: var(--header-muted);
+    font-size: 0.875rem;
+}
+
+/* ---------- Buttons ---------- */
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-small);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.button-small {
+    min-height: 2.5rem;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.9375rem;
+}
+
+.button-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.button-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    color: var(--on-primary);
+}
+
+.button-secondary {
+    border-color: var(--primary);
+    background: var(--surface);
+    color: var(--primary);
+}
+
+.button-secondary:hover:not(:disabled) {
+    background: var(--primary-tint);
+    color: var(--primary-hover);
+}
+
+.button-danger {
+    background: var(--danger);
+    color: #ffffff;
+}
+
+.button-danger:hover:not(:disabled) {
+    background: var(--danger-hover);
+}
+
+.button-danger-outline {
+    border-color: var(--danger);
+    background: var(--surface);
+    color: var(--danger);
+}
+
+.button-danger-outline:hover:not(:disabled) {
+    background: var(--danger-tint);
+}
+
+.button-on-dark {
+    border-color: #ffffff;
+    background: transparent;
+    color: #ffffff;
+}
+
+.button-on-dark:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- Layout ---------- */
+.admin-main {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.admin-main:focus {
+    outline: none;
+}
+
+.screen {
+    display: grid;
+    gap: 1rem;
+}
+
+.screen > div {
+    display: grid;
+    gap: 1rem;
+}
+
+.screen-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.screen-title {
+    font-size: 1.6rem;
+    line-height: 1.25;
+}
+
+.screen-title:focus {
+    outline: none;
+}
+
+.section-title {
+    font-size: 1.1rem;
+}
+
+.back-link {
+    justify-self: start;
+    font-weight: 600;
+}
+
+/* FR-55 idle warning */
+.idle-warning {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--draft-bg);
+    color: var(--draft-fg);
+    border-bottom: 2px solid var(--draft-fg);
+    font-weight: 600;
+}
+
+/* ---------- Messages ---------- */
+.message {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid;
+    border-radius: var(--radius-small);
+}
+
+.message-info {
+    background: var(--info-bg);
+    color: var(--info-fg);
+}
+
+.message-error {
+    background: var(--danger-tint);
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* Empty live regions stay in the page (so they are announced later) but take no space. */
+.live-region:empty {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.empty {
+    padding: 1rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--muted);
+}
+
+/* ---------- Sign-in ---------- */
+.login-screen {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+}
+
+.login-card {
+    display: grid;
+    gap: 1rem;
+    width: min(26rem, 100%);
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 6px solid var(--header-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.login-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.login-form .message {
+    margin-bottom: 0;
+}
+
+.login-footer {
+    font-size: 0.9375rem;
+}
+
+/* ---------- Form fields ---------- */
+.field {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.field label,
+.checkbox-field label {
+    font-weight: 600;
+}
+
+.required {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.875rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+input[type="time"],
+select,
+textarea {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+}
+
+input:disabled {
+    background: var(--bg);
+    color: var(--muted);
+}
+
+textarea {
+    resize: vertical;
+}
+
+input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--primary);
+}
+
+/* Invalid fields: thicker red border AND a message, not colour alone. */
+[aria-invalid="true"] {
+    border: 2px solid var(--danger) !important;
+}
+
+.field-error {
+    color: var(--danger);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.field-error::before {
+    content: "! ";
+    font-weight: 800;
+}
+
+.field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: 1rem;
+}
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* ---------- Place form ---------- */
+.place-form {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.form-section {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 1rem 1.25rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.form-section legend {
+    padding: 0 0.4rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.error-summary {
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--danger);
+    border-radius: var(--radius);
+    background: var(--danger-tint);
+    color: var(--danger);
+}
+
+.error-summary:focus {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.error-summary h2 {
+    margin-bottom: 0.4rem;
+    font-size: 1.05rem;
+}
+
+.error-summary ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.error-summary a {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.meta div {
+    padding: 0.6rem 0.8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+}
+
+.meta dt {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.meta dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* FR-44 opening-hours editor */
+.hours-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hours-table th,
+.hours-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.hours-table thead th {
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
+.hours-table tbody th {
+    font-weight: 600;
+}
+
+.hours-table input[type="time"] {
+    max-width: 9rem;
+}
+
+.closed-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    cursor: pointer;
+}
+
+.closed-toggle span {
+    display: none; /* the column heading says it on wide screens */
+}
+
+.hours-error-row td {
+    padding-top: 0;
+}
+
+.hours-editor > .button {
+    justify-self: start;
+}
+
+/* ---------- Toolbar and data tables ---------- */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-end;
+}
+
+.toolbar .field:first-child {
+    flex: 1 1 18rem;
+}
+
+.toolbar .field:last-child {
+    flex: 0 1 12rem;
+}
+
+.table-area {
+    min-width: 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.data-table thead th {
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.data-table tbody th {
+    font-weight: 600;
+}
+
+.data-table tbody tr:last-child > * {
+    border-bottom: none;
+}
+
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* FR-47, NFR-25: icon AND text */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-badge.is-published {
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+}
+
+.status-badge.is-unpublished {
+    background: var(--draft-bg);
+    color: var(--draft-fg);
+    border: 1px dashed var(--draft-fg);
+}
+
+/* Category forms */
+.inline-form {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.rename-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rename-form input {
+    flex: 1 1 14rem;
+    width: auto;
+}
+
+.rename-form .field-error {
+    flex-basis: 100%;
+}
+
+/* ---------- Narrow screens: table rows become cards ---------- */
+@media (max-width: 760px) {
+    .data-table,
+    .data-table tbody,
+    .data-table tr,
+    .data-table th,
+    .data-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table {
+        border: none;
+        background: none;
+    }
+
+    .data-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .data-table tbody tr {
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    .data-table tbody th,
+    .data-table tbody td {
+        padding: 0.35rem 0;
+        border: none;
+    }
+
+    .data-table tbody [data-label]::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .hours-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .hours-table,
+    .hours-table tbody,
+    .hours-table tr {
+        display: block;
+    }
+
+    .hours-table tbody tr[data-day] {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .hours-table tbody tr[data-day] th {
+        grid-column: 1 / -1;
+        padding: 0;
+        border: none;
+    }
+
+    .hours-table tbody tr td {
+        display: block;
+        padding: 0;
+        border: none;
+    }
+
+    .hours-table tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--muted);
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+
+    .hours-table tbody td[data-label]:last-child::before {
+        display: none;
+    }
+
+    .hours-table tbody td:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .hours-table input[type="time"] {
+        max-width: none;
+    }
+
+    .closed-toggle span {
+        display: inline;
+    }
+
+    .admin-user {
+        margin-left: 0;
+    }
+}
+
+/* ---------- Confirm dialog (FR-41, FR-46) ---------- */
+.confirm-dialog {
+    width: min(30rem, calc(100% - 2rem));
+    padding: 1.25rem 1.5rem;
+    border: none;
+    border-top: 6px solid var(--danger);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.25);
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(15, 15, 30, 0.6);
+}
+
+.confirm-dialog p {
+    margin-top: 0.6rem;
+}
+
+.dialog-title {
+    font-size: 1.2rem;
+}
+
+.dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+    }
+}
