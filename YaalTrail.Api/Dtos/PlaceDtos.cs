@@ -1,13 +1,16 @@
 namespace YaalTrail.Api.Dtos;
 
-// FR-01: one row in the place catalogue.
+// FR-01, FR-14: one catalogue row. Latitude and longitude let the map
+// place a marker without loading every place's full detail.
 public record PlaceListItemDto(
     int Id,
     string Name,
     string Category,
     decimal DistanceKm,
     string? PhotoUrl,
-    string EntryFeeText);
+    string EntryFeeText,
+    decimal Latitude,
+    decimal Longitude);
 
 // FR-05: list plus the number of matching places.
 public record PlaceListResponseDto(int Count, List<PlaceListItemDto> Items);

@@ -1,18 +1,24 @@
 // Entry point: holds the page state and connects the UI to the API.
-import { getCategories, getPlace, getPlaces } from './api.js';
+import { getCategories, getPlace, getPlaces, getPlannerSettings } from './api.js';
 import { STRINGS } from './strings.js';
 import {
     renderChips, renderListMessage, renderPlaceList, renderResultCount, updateChips,
 } from './catalogue.js';
 import { renderDetail, renderDetailError, renderDetailLoading } from './detail.js';
+import { createPlaceMap } from './map.js';
 
 const SEARCH_DELAY_MS = 300;
 
-// Current filter, search and sort chosen by the visitor.
+// Current filter, search, sort and view chosen by the visitor.
+// The map reads this same state, so both views show the same places (FR-14).
 const state = {
     categoryIds: new Set(),
     search: '',
     sort: 'distance',
+    view: 'list',
+    categories: [],
+    places: [],
+    reference: undefined,
 };
 
 const elements = {
@@ -20,13 +26,22 @@ const elements = {
     search: document.getElementById('search-input'),
     sort: document.getElementById('sort-select'),
     planButton: document.getElementById('plan-button'),
+    viewList: document.getElementById('view-list'),
+    viewMap: document.getElementById('view-map'),
     resultCount: document.getElementById('result-count'),
     listMessage: document.getElementById('list-message'),
+    listView: document.getElementById('list-view'),
     placeList: document.getElementById('place-list'),
+    mapView: document.getElementById('map-view'),
+    mapCanvas: document.getElementById('map'),
+    mapLegend: document.getElementById('map-legend'),
+    mapNotice: document.getElementById('map-notice'),
     dialog: document.getElementById('detail-dialog'),
     detail: document.getElementById('detail-content'),
     toast: document.getElementById('toast'),
 };
+
+let mapController = null;
 
 let latestRequestNo = 0;   // ignore slow responses that arrive after a newer request
 let searchTimer = null;
@@ -37,7 +52,7 @@ init();
 
 async function init() {
     wireEvents();
-    await loadCategories();
+    await Promise.all([loadCategories(), loadSettings()]);
     await loadPlaces();
 }
 
@@ -59,6 +74,10 @@ function wireEvents() {
 
     elements.planButton.addEventListener('click', () => showToast(STRINGS.planComingSoon));
 
+    // FR-14
+    elements.viewList.addEventListener('click', () => setView('list'));
+    elements.viewMap.addEventListener('click', () => setView('map'));
+
     // Close the dialog when the dark backdrop is clicked.
     elements.dialog.addEventListener('click', (event) => {
         if (event.target === elements.dialog) closeDetail();
@@ -75,11 +94,27 @@ function wireEvents() {
 
 async function loadCategories() {
     try {
-        const categories = await getCategories();
-        renderChips(elements.chips, categories, toggleCategory);
+        state.categories = await getCategories();
+        renderChips(elements.chips, state.categories, toggleCategory);
         updateChips(elements.chips, state.categoryIds);
+        if (state.view === 'map') ensureMap().setCategories(state.categories);
     } catch {
         elements.chips.textContent = STRINGS.categoriesFailed;
+    }
+}
+
+// FR-15: Chundikuli comes from the API, which reads the Planner settings.
+async function loadSettings() {
+    try {
+        state.reference = await getPlannerSettings();
+    } catch {
+        state.reference = null;
+    }
+
+    if (state.view === 'map') {
+        const map = ensureMap();
+        map.setReference(state.reference);
+        map.invalidateSize();
     }
 }
 
@@ -109,8 +144,10 @@ async function loadPlaces() {
         });
         if (requestNo !== latestRequestNo) return;
 
+        state.places = result.items;
         renderResultCount(elements.resultCount, result.count);
-        renderPlaceList(elements.placeList, result.items, openPlace);
+        renderPlaceList(elements.placeList, state.places, openPlace);
+        if (state.view === 'map') ensureMap().setPlaces(state.places);
 
         // FR-06
         if (result.count === 0) {
@@ -121,8 +158,10 @@ async function loadPlaces() {
     } catch {
         if (requestNo !== latestRequestNo) return;
 
+        state.places = [];
         renderResultCount(elements.resultCount, null);
         elements.placeList.replaceChildren();
+        if (state.view === 'map') mapController?.setPlaces([]);
         renderListMessage(elements.listMessage, STRINGS.placesFailed, { label: STRINGS.retry, onClick: loadPlaces });
     } finally {
         if (requestNo === latestRequestNo) setListBusy(false);
@@ -135,6 +174,49 @@ function clearFilters() {
     elements.search.value = '';
     updateChips(elements.chips, state.categoryIds);
     loadPlaces();
+}
+
+// FR-14: List and Map show the same filtered places. The list stays in the page
+// when the map is open, so a tile failure never removes it (FR-20, NFR-24).
+function setView(view) {
+    if (state.view === view) return;
+    state.view = view;
+
+    const showMap = view === 'map';
+    elements.listView.hidden = showMap;
+    elements.mapView.hidden = !showMap;
+    elements.viewList.setAttribute('aria-pressed', String(!showMap));
+    elements.viewMap.setAttribute('aria-pressed', String(showMap));
+
+    if (!showMap) return;
+
+    const map = ensureMap();
+    // The panel has just been shown. Wait a frame so Leaflet can measure it.
+    requestAnimationFrame(() => {
+        if (state.view !== 'map') return;
+        map.setCategories(state.categories);
+        map.setReference(state.reference);
+        map.setPlaces(state.places);
+        map.invalidateSize();
+        requestAnimationFrame(() => {
+            if (state.view === 'map') map.invalidateSize();
+        });
+    });
+}
+
+function ensureMap() {
+    if (!mapController) {
+        mapController = createPlaceMap({
+            canvas: elements.mapCanvas,
+            legend: elements.mapLegend,
+            notice: elements.mapNotice,
+            onViewDetails: openPlace,
+            onAddToPlan: addToPlan,
+            onShowList: () => setView('list'),
+            isDialogOpen: () => elements.dialog.open,
+        });
+    }
+    return mapController;
 }
 
 function setListBusy(isBusy) {

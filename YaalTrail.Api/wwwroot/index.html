@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>YaalTrail – One-day visits around Chundikuli, Jaffna</title>
+    <!-- Leaflet 1.9.x from a CDN. Our stylesheet comes after it so map controls can be restyled. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha384-c6Rcwz4e4CITMbu/NBmnNS8yN2sC3cUElMEMfP3vqqKFp7GOYaaBBCqmaWBjmkjb" crossorigin="anonymous">
     <link rel="stylesheet" href="css/site.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
     <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -19,6 +22,12 @@
                 </div>
 
                 <div class="header-tools">
+                    <!-- FR-14: the same filters apply to the list and the map -->
+                    <div class="view-toggle" role="group" aria-label="View places as">
+                        <button type="button" id="view-list" aria-pressed="true" aria-controls="list-view">List</button>
+                        <button type="button" id="view-map" aria-pressed="false" aria-controls="map-view">Map</button>
+                    </div>
+
                     <!-- FR-04: keyword search -->
                     <div class="search-field">
                         <label for="search-input" class="visually-hidden">Search places by name or description</label>
@@ -59,7 +68,23 @@
         <!-- FR-06: empty-state and error messages -->
         <div id="list-message" class="list-message" hidden></div>
         <!-- FR-01: place cards -->
-        <ul id="place-list" class="place-grid"></ul>
+        <div id="list-view">
+            <ul id="place-list" class="place-grid"></ul>
+        </div>
+
+        <!-- FR-14 to FR-20: interactive map. Hidden until the visitor chooses Map. -->
+        <div id="map-view" class="map-view" hidden>
+            <div id="map-notice" class="list-message map-notice" role="status"></div>
+            <div class="map-layout">
+                <div id="map" class="map-canvas"></div>
+                <div class="map-side">
+                    <h3 id="legend-title" class="legend-title">Legend</h3>
+                    <ul id="map-legend" class="map-legend" aria-labelledby="legend-title"></ul>
+                    <!-- FR-19: also shown inside the map by the tile layer -->
+                    <p class="map-credit">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors</p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- FR-08: place detail -->

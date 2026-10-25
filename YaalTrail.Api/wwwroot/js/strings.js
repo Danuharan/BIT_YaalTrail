@@ -40,4 +40,16 @@ export const STRINGS = {
 
     addToPlan: 'Add to day plan',
     planComingSoon: 'The day planner is coming soon.',
+
+    // FR-14 to FR-20: map view
+    mapLabel: 'Map of places around Chundikuli',
+    referenceLocation: 'Chundikuli (reference location)',
+    referencePopup: 'Day plans start and end here.',
+    viewDetails: 'View details',
+    directions: 'Directions',
+    opensNewTab: '(opens in a new tab)',
+    tilesFailed: 'Map tiles could not be loaded. Switch to List to keep browsing places.',
+    mapLibraryFailed: 'The map could not be loaded. Switch to List to keep browsing places.',
+    referenceMissing: 'The reference location could not be loaded, so the map is not centred on Chundikuli. Switch to List to keep browsing places.',
+    showList: 'Show list',
 };

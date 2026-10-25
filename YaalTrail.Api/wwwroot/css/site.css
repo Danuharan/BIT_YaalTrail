@@ -42,7 +42,7 @@
     font-size: 100%;
 }
 
-/* Category colours (FR-02; reused later for map markers, FR-17). */
+/* Category colours (FR-02). The same tokens colour the map markers and legend (FR-17). */
 .cat-religious    { --cat-bg: #fdf0e1; --cat-fg: #8a4b00; }
 .cat-heritage     { --cat-bg: #f3e8fd; --cat-fg: #6a2c91; }
 .cat-natural      { --cat-bg: #e3f4ec; --cat-fg: #1d6b42; }
@@ -190,6 +190,35 @@ button {
     flex: 1 1 28rem;
     justify-content: flex-end;
     min-width: 0;
+}
+
+/* List / Map switch (FR-14). The tick plus the fill shows which view is active. */
+.view-toggle {
+    display: inline-flex;
+    flex: none;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+}
+
+.view-toggle button {
+    min-height: 2.5rem;
+    min-width: 4.5rem;
+    padding: 0.35rem 0.9rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    font-weight: 600;
+}
+
+.view-toggle button[aria-pressed="true"] {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.view-toggle button[aria-pressed="true"]::before {
+    content: "✓ ";
 }
 
 /* Search box */
@@ -720,6 +749,216 @@ button {
 .toast.is-visible {
     opacity: 1;
     transform: translate(-50%, 0);
+}
+
+/* ---------- Map (FR-14 to FR-20) ---------- */
+.map-view {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+/* An empty notice must not leave a dashed box on the page. */
+.list-message.map-notice:empty {
+    display: none;
+}
+
+.map-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.map-canvas {
+    width: 100%;
+    height: clamp(280px, calc(100dvh - 18rem), 720px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #dbe3dc;
+    /* Keep Leaflet's high z-index panes inside the map, under the sticky header. */
+    isolation: isolate;
+    z-index: 0;
+}
+
+.map-side {
+    min-width: 0;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.legend-title {
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.map-legend {
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.45rem 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9375rem;
+}
+
+.swatch {
+    flex: none;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    background: var(--cat-fg, #3d4852);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--border);
+}
+
+/* Same diamond as the reference marker, so the legend matches the map (FR-17). */
+.swatch-reference {
+    border-radius: 2px;
+    background: var(--primary);
+    transform: rotate(45deg);
+}
+
+/* FR-19 */
+.map-credit {
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+}
+
+.map-credit a {
+    color: var(--primary-hover);
+}
+
+@media (min-width: 800px) {
+    .map-layout {
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    .map-side {
+        flex: 0 0 15rem;
+        order: -1;
+    }
+
+    .map-legend {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 0.45rem;
+    }
+
+    .map-canvas {
+        flex: 1 1 auto;
+        height: clamp(420px, calc(100dvh - 16rem), 760px);
+    }
+}
+
+/* Marker icons. The category class on the marker sets --cat-fg (FR-17). */
+.place-marker {
+    background: none;
+    border: none;
+}
+
+.place-marker-dot {
+    display: block;
+    width: 16px;
+    height: 16px;
+    margin: 6px;
+    border-radius: 50%;
+    background: var(--cat-fg, #3d4852);
+    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(16, 24, 40, 0.5);
+}
+
+.ref-marker-shape {
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: 7px;
+    background: var(--primary);
+    transform: rotate(45deg);
+    box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(16, 24, 40, 0.5);
+}
+
+/* Global border-box breaks Leaflet tile positions. Tiles and markers stay content-box;
+   popups and controls keep border-box so button padding does not overflow. */
+.leaflet-container.map-canvas .leaflet-pane,
+.leaflet-container.map-canvas .leaflet-tile,
+.leaflet-container.map-canvas .leaflet-marker-icon,
+.leaflet-container.map-canvas .leaflet-marker-shadow {
+    box-sizing: content-box;
+}
+
+.leaflet-container.map-canvas {
+    font: inherit;
+    background: #dbe3dc;
+    border-radius: inherit;
+}
+
+.leaflet-container.map-canvas .leaflet-control-zoom a {
+    width: 2.75rem;
+    height: 2.75rem;
+    line-height: 2.75rem;
+    color: var(--text);
+}
+
+.leaflet-container.map-canvas .leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text);
+    font-size: 0.75rem;
+    max-width: min(70%, 22rem);
+    white-space: normal;
+}
+
+.leaflet-container.map-canvas .leaflet-control-attribution a {
+    color: var(--primary-hover);
+}
+
+.leaflet-container.map-canvas .leaflet-popup-content {
+    margin: 0.75rem;
+}
+
+.leaflet-container.map-canvas .leaflet-popup-close-button {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1.25rem;
+    color: var(--text);
+}
+
+.map-popup {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.popup-title {
+    font-size: 1.05rem;
+    line-height: 1.3;
+}
+
+.popup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.popup-actions .button {
+    width: 100%;
+    text-align: center;
+}
+
+a.button {
+    text-decoration: none;
 }
 
 /* Respect visitors who prefer less motion. */

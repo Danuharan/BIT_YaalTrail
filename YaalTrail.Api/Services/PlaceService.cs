@@ -38,6 +38,8 @@ public class PlaceService : IPlaceService
         int CategoryId,
         string Category,
         decimal DistanceKm,
+        decimal Latitude,
+        decimal Longitude,
         string? PhotoUrl,
         decimal EntryFee);
 
@@ -66,9 +68,10 @@ public class PlaceService : IPlaceService
             ? query.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             : query.OrderBy(p => p.DistanceKm).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase);
 
-        // FR-01: name, category, distance and a representative photo.
+        // FR-01, FR-14: name, category, distance, photo and coordinates for the map.
         var items = query
-            .Select(p => new PlaceListItemDto(p.Id, p.Name, p.Category, p.DistanceKm, p.PhotoUrl, FormatEntryFee(p.EntryFee)))
+            .Select(p => new PlaceListItemDto(
+                p.Id, p.Name, p.Category, p.DistanceKm, p.PhotoUrl, FormatEntryFee(p.EntryFee), p.Latitude, p.Longitude))
             .ToList();
 
         // FR-05: number of places matching the filter and search.
@@ -90,6 +93,8 @@ public class PlaceService : IPlaceService
                     p.CategoryId,
                     p.Category!.Name,
                     p.DistanceKm,
+                    p.Latitude,
+                    p.Longitude,
                     p.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).FirstOrDefault(),
                     p.EntryFee))
                 .ToListAsync());
@@ -111,7 +116,7 @@ public class PlaceService : IPlaceService
             return null;
 
         // FR-09: "today" and "now" are in Sri Lanka time, not server time.
-        DateTime colomboNow = TimeZoneInfo.ConvertTime(_clock.GetUtcNow(), GetColomboTimeZone()).DateTime;
+        DateTime colomboNow = SriLankaTime.Now(_clock);
         OpeningHour? today = place.OpeningHours.FirstOrDefault(o => o.DayOfWeek == colomboNow.DayOfWeek);
 
         // FR-44: one row per day, listed Monday to Sunday.
@@ -194,18 +199,5 @@ public class PlaceService : IPlaceService
             .Select(n => n!.Value)
             .Distinct()
             .ToList();
-    }
-
-    // "Asia/Colombo" is the IANA id; Windows without ICU may only know the Windows id.
-    private static TimeZoneInfo GetColomboTimeZone()
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Colombo");
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("Sri Lanka Standard Time");
-        }
     }
 }

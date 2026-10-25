@@ -16,7 +16,7 @@ public class PlacesController : ControllerBase
         _places = places;
     }
 
-    // FR-01 to FR-05, FR-07
+    // FR-01 to FR-05, FR-07, FR-14
     // GET api/places?categories=1,2&search=text&sort=distance|name
     [HttpGet]
     public async Task<ActionResult<PlaceListResponseDto>> GetPlaces(

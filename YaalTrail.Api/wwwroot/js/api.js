@@ -13,6 +13,11 @@ export function getCategories() {
     return getJson('/api/categories');
 }
 
+// FR-15: reference location from the Planner settings, not a number in this file.
+export function getPlannerSettings() {
+    return getJson('/api/settings/planner');
+}
+
 // FR-01 to FR-05: returns { count, items }.
 export function getPlaces({ categoryIds, search, sort }) {
     const params = new URLSearchParams();

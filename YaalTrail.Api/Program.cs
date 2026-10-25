@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using YaalTrail.Api.Configuration;
 using YaalTrail.Api.Data;
 using YaalTrail.Api.Services;
 
@@ -24,6 +25,16 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPlaceService, PlaceService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// SRS 4.4 day planner: pure calculation services (NFR-23) plus the database step.
+builder.Services.AddSingleton<IDistanceService, DistanceService>();
+builder.Services.AddSingleton<IOpeningHoursValidator, OpeningHoursValidator>();
+builder.Services.AddSingleton<IPlanBuilderService, PlanBuilderService>();
+builder.Services.AddScoped<IPlanService, PlanService>();
+
+// FR-15: Chundikuli, the 25 km radius and the average speed (SRS 6.4).
+builder.Services.Configure<PlannerOptions>(
+    builder.Configuration.GetSection(PlannerOptions.SectionName));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
