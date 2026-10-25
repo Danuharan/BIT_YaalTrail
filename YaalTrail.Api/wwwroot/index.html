@@ -47,11 +47,12 @@
                         </select>
                     </div>
 
-                    <!-- Day-plan counter (planner comes later) -->
-                    <button id="plan-button" type="button" class="plan-button">
+                    <!-- Day plan: opens the drawer on narrow screens, jumps to the side panel on wide ones.
+                         The badge shows how many places are in the plan. -->
+                    <button id="plan-button" type="button" class="plan-button" aria-controls="plan-panel">
                         <span>Day plan</span>
                         <span id="plan-count" class="badge">0</span>
-                        <span class="visually-hidden">places</span>
+                        <span id="plan-count-label" class="visually-hidden">places in plan</span>
                     </button>
                 </div>
             </div>
@@ -61,6 +62,7 @@
         </div>
     </header>
 
+    <div class="layout">
     <main id="main" class="page" tabindex="-1">
         <h2 class="visually-hidden">Places</h2>
         <!-- FR-05: number of matching places -->
@@ -86,6 +88,12 @@
             </div>
         </div>
     </main>
+
+    <!-- SRS 4.4, 4.5: day plan. A side panel on wide screens, a drawer on narrow screens.
+         Filled in by js/planPanel.js. -->
+    <aside id="plan-panel" class="plan-panel" aria-labelledby="plan-title"></aside>
+    </div>
+    <div id="plan-backdrop" class="plan-backdrop" hidden></div>
 
     <!-- FR-08: place detail -->
     <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title">

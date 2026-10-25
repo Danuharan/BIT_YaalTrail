@@ -15,7 +15,12 @@ public class Place
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    // FR-48: the administrator who last created or modified this place.
+    // Nullable because seeded places have no admin, and deleting an admin keeps the place.
+    public int? MaintainedByAdminId { get; set; }
+
     public Category? Category { get; set; }
+    public AdminUser? MaintainedByAdmin { get; set; }
     public List<PlaceImage> Images { get; set; } = new();
     public List<OpeningHour> OpeningHours { get; set; } = new();
 }

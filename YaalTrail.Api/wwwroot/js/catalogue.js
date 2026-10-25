@@ -2,6 +2,7 @@
 import { el } from './dom.js';
 import { STRINGS } from './strings.js';
 import { categoryClass, formatDistance } from './format.js';
+import { createPlanToggle } from './planToggle.js';
 
 // ---------- Category chips (FR-02) ----------
 
@@ -50,16 +51,21 @@ export function renderListMessage(container, text, action) {
     }
 
     container.hidden = false;
-    container.replaceChildren(
-        el('p', { text }),
-        action ? el('button', { type: 'button', className: 'button button-secondary', onClick: action.onClick }, [action.label]) : null,
-    );
+    container.replaceChildren(el('p', { text }));
+    if (action) {
+        container.append(el('button', { type: 'button', className: 'button button-secondary', onClick: action.onClick }, [action.label]));
+    }
 }
 
 // ---------- Place cards (FR-01) ----------
 
-export function renderPlaceList(list, places, onSelect) {
-    const items = places.map((place) => el('li', {}, [createPlaceCard(place, onSelect)]));
+// plan = { has(id), toggle(place) }. The card itself is a button, so the
+// FR-21 "Add to day plan" button sits next to it rather than inside it.
+export function renderPlaceList(list, places, onSelect, plan) {
+    const items = places.map((place) => el('li', { className: `card-item ${categoryClass(place.category)}` }, [
+        createPlaceCard(place, onSelect),
+        el('div', { className: 'card-footer' }, [createPlanToggle(place, plan, 'button-small')]),
+    ]));
     list.replaceChildren(...items);
 }
 

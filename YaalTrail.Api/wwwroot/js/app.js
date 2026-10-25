@@ -6,8 +6,14 @@ import {
 } from './catalogue.js';
 import { renderDetail, renderDetailError, renderDetailLoading } from './detail.js';
 import { createPlaceMap } from './map.js';
+import { createPlanStore } from './plan.js';
+import { createPlanPanel } from './planPanel.js';
+import { syncPlanToggles } from './planToggle.js';
 
 const SEARCH_DELAY_MS = 300;
+
+// Below this width the day plan is a drawer; above it, a side panel (matches site.css).
+const narrowScreen = window.matchMedia('(max-width: 1099.98px)');
 
 // Current filter, search, sort and view chosen by the visitor.
 // The map reads this same state, so both views show the same places (FR-14).
@@ -25,7 +31,12 @@ const elements = {
     chips: document.getElementById('category-chips'),
     search: document.getElementById('search-input'),
     sort: document.getElementById('sort-select'),
+    header: document.querySelector('.site-header'),
     planButton: document.getElementById('plan-button'),
+    planCount: document.getElementById('plan-count'),
+    planCountLabel: document.getElementById('plan-count-label'),
+    planPanel: document.getElementById('plan-panel'),
+    planBackdrop: document.getElementById('plan-backdrop'),
     viewList: document.getElementById('view-list'),
     viewMap: document.getElementById('view-map'),
     resultCount: document.getElementById('result-count'),
@@ -47,11 +58,26 @@ let latestRequestNo = 0;   // ignore slow responses that arrive after a newer re
 let searchTimer = null;
 let toastTimer = null;
 let focusBeforeDialog = null;
+let isDrawerOpen = false;
+
+// FR-21 to FR-34: the day plan, restored from localStorage (FR-33).
+const planStore = createPlanStore(onPlanChanged);
+const planPanel = createPlanPanel({
+    root: elements.planPanel,
+    store: planStore,
+    onClose: closeDrawer,
+    onShowPlace: openPlace,
+});
+
+// What the add/remove buttons on cards, details and popups need.
+const planActions = { has: planStore.has, toggle: togglePlace };
 
 init();
 
 async function init() {
     wireEvents();
+    watchHeaderHeight();
+    onPlanChanged();
     await Promise.all([loadCategories(), loadSettings()]);
     await loadPlaces();
 }
@@ -72,7 +98,19 @@ function wireEvents() {
         loadPlaces();
     });
 
-    elements.planButton.addEventListener('click', () => showToast(STRINGS.planComingSoon));
+    // Day plan panel / drawer
+    elements.planButton.addEventListener('click', onPlanButton);
+    elements.planBackdrop.addEventListener('click', closeDrawer);
+    elements.planPanel.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isDrawerOpen) {
+            event.preventDefault();
+            closeDrawer();
+        }
+    });
+    narrowScreen.addEventListener('change', () => {
+        if (!narrowScreen.matches) closeDrawer({ restoreFocus: false });
+        updatePlanButton();
+    });
 
     // FR-14
     elements.viewList.addEventListener('click', () => setView('list'));
@@ -146,7 +184,7 @@ async function loadPlaces() {
 
         state.places = result.items;
         renderResultCount(elements.resultCount, result.count);
-        renderPlaceList(elements.placeList, state.places, openPlace);
+        renderPlaceList(elements.placeList, state.places, openPlace, planActions);
         if (state.view === 'map') ensureMap().setPlaces(state.places);
 
         // FR-06
@@ -211,7 +249,7 @@ function ensureMap() {
             legend: elements.mapLegend,
             notice: elements.mapNotice,
             onViewDetails: openPlace,
-            onAddToPlan: addToPlan,
+            plan: planActions,
             onShowList: () => setView('list'),
             isDialogOpen: () => elements.dialog.open,
         });
@@ -240,7 +278,7 @@ async function openPlace(id, triggerElement) {
 
     try {
         const place = await getPlace(id);
-        renderDetail(elements.detail, place, { onClose: closeDetail, onAddToPlan: addToPlan });
+        renderDetail(elements.detail, place, { onClose: closeDetail, plan: planActions, onOpenPlan: openPlanFromDetail });
     } catch {
         renderDetailError(elements.detail, closeDetail);
     }
@@ -253,9 +291,83 @@ function closeDetail() {
     elements.dialog.close();
 }
 
-// FR-21 placeholder: the planner will be added later.
-function addToPlan(place, statusElement) {
-    statusElement.textContent = STRINGS.planComingSoon;
+// ---------- Day plan ----------
+
+// FR-21, FR-22: the same button adds a place or removes it again.
+function togglePlace(place) {
+    if (planStore.has(place.id)) {
+        planStore.remove(place.id);
+        showToast(STRINGS.removedFromPlan(place.name));
+    } else {
+        planStore.add(place);
+        showToast(STRINGS.addedToPlan(place.name, planStore.get().items.length));
+    }
+}
+
+// Runs after every change to the plan (and once at start-up).
+function onPlanChanged() {
+    const count = planStore.get().items.length;
+    elements.planCount.textContent = String(count);
+    elements.planCountLabel.textContent = STRINGS.planCountLabel(count);
+    syncPlanToggles(document, planStore.has);
+    planPanel.refresh();
+}
+
+function onPlanButton() {
+    if (!narrowScreen.matches) {
+        // Wide screens: the panel is always visible, so just move to it.
+        elements.planPanel.scrollIntoView({ block: 'nearest' });
+        planPanel.focusTitle();
+    } else if (isDrawerOpen) {
+        closeDrawer();
+    } else {
+        openDrawer();
+    }
+}
+
+function openDrawer() {
+    if (!narrowScreen.matches) return;
+    isDrawerOpen = true;
+    elements.planPanel.classList.add('is-open');
+    elements.planBackdrop.hidden = false;
+    document.body.classList.add('drawer-open');
+    updatePlanButton();
+    planPanel.focusTitle();
+}
+
+function closeDrawer({ restoreFocus = true } = {}) {
+    if (!isDrawerOpen) return;
+    isDrawerOpen = false;
+    elements.planPanel.classList.remove('is-open');
+    elements.planBackdrop.hidden = true;
+    document.body.classList.remove('drawer-open');
+    updatePlanButton();
+    if (restoreFocus) elements.planButton.focus();
+}
+
+// aria-expanded only makes sense while the plan is a drawer.
+function updatePlanButton() {
+    if (narrowScreen.matches) {
+        elements.planButton.setAttribute('aria-expanded', String(isDrawerOpen));
+    } else {
+        elements.planButton.removeAttribute('aria-expanded');
+    }
+}
+
+// From the detail dialog: close it, then show the plan.
+function openPlanFromDetail() {
+    focusBeforeDialog = null; // the dialog's close handler must not move focus back
+    closeDetail();
+    if (narrowScreen.matches) openDrawer();
+    else onPlanButton();
+}
+
+// The side panel sticks below the sticky header, so CSS needs the header's height.
+function watchHeaderHeight() {
+    const update = () => document.documentElement.style.setProperty(
+        '--header-height', `${elements.header.offsetHeight}px`);
+    update();
+    if ('ResizeObserver' in window) new ResizeObserver(update).observe(elements.header);
 }
 
 // ---------- Toast ----------

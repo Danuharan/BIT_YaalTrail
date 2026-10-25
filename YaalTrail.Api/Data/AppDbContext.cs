@@ -37,6 +37,12 @@ public class AppDbContext : DbContext
              .WithMany(c => c.Places)
              .HasForeignKey(p => p.CategoryId)
              .OnDelete(DeleteBehavior.Restrict);
+
+            // FR-48: last admin who changed the place; deleting the admin keeps the place.
+            e.HasOne(p => p.MaintainedByAdmin)
+             .WithMany()
+             .HasForeignKey(p => p.MaintainedByAdminId)
+             .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<PlaceImage>(e =>

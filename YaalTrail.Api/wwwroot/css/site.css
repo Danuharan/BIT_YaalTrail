@@ -341,10 +341,15 @@ button {
     font-weight: 700;
 }
 
-/* ---------- Main list ---------- */
-.page {
+/* ---------- Page layout: places + day plan ---------- */
+.layout {
     max-width: var(--page-width);
     margin: 0 auto;
+}
+
+/* ---------- Main list ---------- */
+.page {
+    min-width: 0;
     padding: 1.25rem 1rem 3rem;
 }
 
@@ -384,17 +389,12 @@ button {
     opacity: 0.6;
 }
 
-.place-grid > li {
-    display: flex;
-}
-
-.card {
+/* The list item is the visible card: the details button on top and the
+   FR-21 "Add to day plan" button in a footer (a button cannot contain a button). */
+.card-item {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    padding: 0;
     overflow: hidden;
-    text-align: left;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -402,9 +402,28 @@ button {
     transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.card:hover {
+.card-item:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-raised);
+}
+
+.card {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
+    text-align: left;
+    background: transparent;
+    border: none;
+}
+
+.card:focus-visible {
+    outline-offset: -3px;
+}
+
+.card-footer {
+    padding: 0 1rem 1rem;
 }
 
 .card-photo,
@@ -508,6 +527,56 @@ button {
 
 .icon-button:hover {
     background: var(--bg);
+}
+
+.icon-button:disabled,
+.button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.button-small {
+    min-height: 2.5rem;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.9375rem;
+}
+
+.icon-button-small {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.button-danger {
+    border-color: var(--closed-fg);
+    color: var(--closed-fg);
+}
+
+.button-danger:hover {
+    background: var(--closed-bg);
+}
+
+/* FR-21, FR-22: add/remove toggle. The icon and label change, not only the colour. */
+.plan-toggle {
+    gap: 0.4rem;
+}
+
+.plan-toggle-icon {
+    font-weight: 800;
+}
+
+.link-button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary-hover);
+    font-weight: 700;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.link-button:hover {
+    color: var(--text);
 }
 
 /* ---------- Detail dialog (FR-08) ---------- */
@@ -959,6 +1028,391 @@ button {
 
 a.button {
     text-decoration: none;
+}
+
+/* ---------- Day plan (SRS 4.4, 4.5) ---------- */
+
+/* Narrow screens: a drawer from the right, opened with the header's Day plan button. */
+.plan-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(28rem, 100%);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-raised);
+}
+
+/* Closed drawer: display none also takes it out of the keyboard tab order. */
+.plan-panel:not(.is-open) {
+    display: none;
+}
+
+.plan-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(15, 23, 30, 0.55);
+}
+
+body.drawer-open {
+    overflow: hidden;
+}
+
+/* Wide screens: always visible beside the places, sticky under the header. */
+@media (min-width: 1100px) {
+    .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 24rem;
+        align-items: start;
+        gap: 0 0.5rem;
+    }
+
+    .plan-panel,
+    .plan-panel:not(.is-open) {
+        display: grid;
+        position: sticky;
+        top: calc(var(--header-height, 0px) + 1rem);
+        z-index: 1;
+        width: auto;
+        max-height: calc(100dvh - var(--header-height, 0px) - 2rem);
+        margin: 1.25rem 1rem 1.25rem 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+    }
+
+    .plan-close,
+    .plan-backdrop {
+        display: none !important;
+    }
+}
+
+.plan-panel {
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+}
+
+.plan-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.plan-title {
+    font-size: 1.25rem;
+}
+
+.plan-title:focus {
+    outline: none;
+}
+
+.plan-title:focus-visible {
+    outline: 3px solid var(--focus);
+}
+
+.plan-summary {
+    font-size: 0.9375rem;
+}
+
+.plan-settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-small);
+    background: var(--bg);
+}
+
+.plan-field {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.plan-field label,
+.stop-duration label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.plan-field input,
+.stop-duration input {
+    min-height: 2.75rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--muted);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+}
+
+.plan-hint {
+    grid-column: 1 / -1;
+    font-size: 0.875rem;
+}
+
+.plan-status {
+    min-height: 1.25rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
+.plan-status:empty {
+    display: none;
+}
+
+.plan-body {
+    display: grid;
+    gap: 0.75rem;
+    transition: opacity 0.15s;
+}
+
+.plan-body.is-loading {
+    opacity: 0.6;
+}
+
+.plan-body:empty {
+    display: none;
+}
+
+.plan-empty {
+    padding: 1rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-small);
+    color: var(--muted);
+}
+
+.plan-day {
+    font-weight: 700;
+}
+
+.plan-order {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+}
+
+/* FR-28: ordered stops */
+.plan-stops {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.plan-stop {
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--cat-fg);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+}
+
+.plan-stop.is-dragging {
+    opacity: 0.5;
+}
+
+.plan-stop.is-drop-target {
+    outline: 3px dashed var(--focus);
+    outline-offset: 2px;
+}
+
+/* NFR-10: dashed border AND the "Not scheduled" text, not colour alone. */
+.plan-stop.is-unscheduled {
+    border-style: dashed;
+    background: var(--bg);
+}
+
+.stop-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    cursor: grab;
+}
+
+.stop-number {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.stop-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    min-width: 0;
+}
+
+.stop-time {
+    font-weight: 600;
+}
+
+.stop-unscheduled {
+    color: var(--closed-fg);
+}
+
+.stop-travel {
+    font-size: 0.875rem;
+}
+
+.stop-duration {
+    display: grid;
+    grid-template-columns: auto 6rem;
+    align-items: center;
+    gap: 0.25rem 0.6rem;
+}
+
+.stop-duration .field-hint,
+.stop-duration .field-error {
+    grid-column: 1 / -1;
+    font-size: 0.8125rem;
+}
+
+.field-error {
+    color: var(--closed-fg);
+    font-weight: 600;
+}
+
+.stop-duration input[aria-invalid="true"] {
+    border-color: var(--closed-fg);
+    border-width: 2px;
+}
+
+/* FR-29, FR-30, NFR-25: icon + bold label + text + how to fix it. */
+.stop-warnings {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.stop-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--notice-border);
+    border-radius: var(--radius-small);
+    background: var(--notice-bg);
+    color: var(--notice-fg);
+    font-size: 0.875rem;
+}
+
+.stop-warning.warning-ArrivesAfterClosing,
+.stop-warning.warning-ClosedAllDay,
+.stop-warning.warning-NotScheduled {
+    border-color: var(--closed-fg);
+    background: var(--closed-bg);
+    color: var(--closed-fg);
+}
+
+.warning-icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: var(--notice-fg);
+    color: var(--notice-bg);
+    font-weight: 800;
+    font-size: 0.8125rem;
+}
+
+.stop-warning.warning-ArrivesAfterClosing .warning-icon,
+.stop-warning.warning-ClosedAllDay .warning-icon,
+.stop-warning.warning-NotScheduled .warning-icon {
+    background: var(--closed-fg);
+    color: var(--surface);
+}
+
+.warning-hint {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--text);
+}
+
+.stop-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.plan-return {
+    font-weight: 600;
+}
+
+.plan-totals h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.plan-totals .facts {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    margin-bottom: 0.4rem;
+}
+
+.plan-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* SRS 2.6: help panels */
+.plan-help {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: var(--bg);
+    font-size: 0.9375rem;
+}
+
+.plan-help summary {
+    min-height: 1.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.plan-help[open] summary {
+    margin-bottom: 0.5rem;
+}
+
+.plan-help ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.plan-help .warning-help-list {
+    list-style: none;
+    padding: 0;
+}
+
+.warning-help-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
 /* Respect visitors who prefer less motion. */

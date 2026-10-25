@@ -3,6 +3,7 @@
 import { el } from './dom.js';
 import { STRINGS } from './strings.js';
 import { categoryClass, formatDistance } from './format.js';
+import { createPlanToggle, syncPlanToggles } from './planToggle.js';
 
 // FR-15: centred on the reference location. Zoom 11 shows greater Jaffna around that point.
 const FIRST_ZOOM = 11;
@@ -10,8 +11,9 @@ const FIRST_ZOOM = 11;
 const POPUP_OPTIONS = { maxWidth: 260, minWidth: 200, autoPan: true, keepInView: true };
 
 // Builds the map the first time the visitor opens it, then updates markers in place.
+// plan = { has(id), toggle(place) } for the popup's day-plan button (FR-21).
 export function createPlaceMap({
-    canvas, legend, notice, onViewDetails, onAddToPlan, onShowList, isDialogOpen,
+    canvas, legend, notice, onViewDetails, plan, onShowList, isDialogOpen,
 }) {
     let L = null;
     let map = null;
@@ -188,7 +190,6 @@ export function createPlaceMap({
     }
 
     function createPlacePopup(place, point) {
-        const status = el('p', { className: 'action-status', role: 'status' });
         return el('div', { className: 'map-popup', tabindex: '-1' }, [
             el('h3', { className: 'popup-title', text: place.name }),
             el('p', {}, [
@@ -201,11 +202,7 @@ export function createPlaceMap({
                     className: 'button button-secondary',
                     onClick: (event) => onViewDetails(place.id, event.currentTarget),
                 }, [STRINGS.viewDetails]),
-                el('button', {
-                    type: 'button',
-                    className: 'button button-primary',
-                    onClick: () => onAddToPlan(place, status),
-                }, [STRINGS.addToPlan]),
+                createPlanToggle(place, plan),
                 // NFR-08: route guidance opens in Google Maps. No turn-by-turn in this page.
                 el('a', {
                     className: 'button button-secondary',
@@ -217,7 +214,6 @@ export function createPlaceMap({
                     el('span', { className: 'visually-hidden', text: ` ${STRINGS.opensNewTab}` }),
                 ]),
             ]),
-            status,
         ]);
     }
 
@@ -239,7 +235,10 @@ export function createPlaceMap({
 
     function watchPopupFocus(marker) {
         marker.on('popupopen', () => {
-            marker.getPopup()?.getElement()?.querySelector('.map-popup')?.focus();
+            const content = marker.getPopup()?.getElement()?.querySelector('.map-popup');
+            // The plan may have changed while this popup was closed (FR-21, FR-22).
+            if (content) syncPlanToggles(content, plan.has);
+            content?.focus();
         });
         marker.on('popupclose', () => {
             if (isDialogOpen()) return;
@@ -311,7 +310,9 @@ function closePopupOnEscape(event, marker) {
 }
 
 function placeLabel(place) {
-    return `${place.name}. ${place.category}. ${STRINGS.distanceFromReference(formatDistance(place.distanceKm))}`;
+    return [place.name, place.category, STRINGS.distanceFromReference(formatDistance(place.distanceKm))]
+        .filter(Boolean)
+        .join('. ');
 }
 
 function placePoint(place) {

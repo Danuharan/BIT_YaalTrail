@@ -149,6 +149,9 @@ namespace YaalTrail.Api.Migrations
                     b.Property<decimal>("Longitude")
                         .HasColumnType("decimal(9,6)");
 
+                    b.Property<int?>("MaintainedByAdminId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -163,6 +166,8 @@ namespace YaalTrail.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("MaintainedByAdminId");
 
                     b.ToTable("Places");
                 });
@@ -286,7 +291,14 @@ namespace YaalTrail.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("YaalTrail.Api.Models.AdminUser", "MaintainedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("MaintainedByAdminId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Category");
+
+                    b.Navigation("MaintainedByAdmin");
                 });
 
             modelBuilder.Entity("YaalTrail.Api.Models.PlaceImage", b =>

@@ -5,6 +5,7 @@ import { createPhotoPlaceholder } from './catalogue.js';
 import {
     categoryClass, formatCoordinates, formatDate, formatDistance, formatHours, todayNameInColombo,
 } from './format.js';
+import { createPlanToggle } from './planToggle.js';
 
 export function renderDetailLoading(container, onClose) {
     container.className = 'detail';
@@ -22,7 +23,8 @@ export function renderDetailError(container, onClose) {
     );
 }
 
-export function renderDetail(container, place, { onClose, onAddToPlan }) {
+// plan = { has(id), toggle(place) }; onOpenPlan shows the day-plan panel.
+export function renderDetail(container, place, { onClose, plan, onOpenPlan }) {
     container.className = `detail ${categoryClass(place.category)}`;
     container.replaceChildren(
         createHeader(place.name, place.category, onClose),
@@ -34,7 +36,7 @@ export function renderDetail(container, place, { onClose, onAddToPlan }) {
             createTextSection(STRINGS.travelTips, place.travelTips),
             createHoursTable(place.openingHours),
             createNotice(),
-            createActions(place, onAddToPlan),
+            createActions(place, plan, onOpenPlan),
         ]),
     );
 }
@@ -134,14 +136,10 @@ function createNotice() {
     ]);
 }
 
-// FR-21 (placeholder until the planner is built).
-function createActions(place, onAddToPlan) {
-    const status = el('p', { className: 'action-status', role: 'status' });
-    const button = el('button', {
-        type: 'button',
-        className: 'button button-primary',
-        onClick: () => onAddToPlan(place, status),
-    }, [STRINGS.addToPlan]);
-
-    return el('div', { className: 'detail-actions' }, [button, status]);
+// FR-21, FR-22: add or remove this place; the day plan can be opened from here too.
+function createActions(place, plan, onOpenPlan) {
+    return el('div', { className: 'detail-actions' }, [
+        createPlanToggle(place, plan),
+        el('button', { type: 'button', className: 'button button-secondary', onClick: onOpenPlan }, [STRINGS.viewPlan]),
+    ]);
 }
