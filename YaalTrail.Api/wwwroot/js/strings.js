@@ -34,6 +34,8 @@ export const STRINGS = {
     day: 'Day',
     hours: 'Hours',
     photoOf: (name) => `Photo of ${name}`,
+    galleryLabel: (name) => `Photos of ${name}`,
+    showPhoto: (n, total, description) => `Show photo ${n} of ${total}: ${description}`,
 
     // NFR-07
     indicativeNotice: 'Opening hours and entry fees are indicative; please verify before travelling.',

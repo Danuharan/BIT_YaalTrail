@@ -7,6 +7,8 @@ import {
 } from './format.js';
 import { createPlanToggle } from './planToggle.js';
 
+const MAX_PHOTOS = 5; // FR-11
+
 export function renderDetailLoading(container, onClose) {
     container.className = 'detail';
     container.replaceChildren(
@@ -56,18 +58,73 @@ function createHeader(title, category, onClose) {
     ]);
 }
 
-// FR-11: up to five photos; a placeholder when there are none.
+// FR-11: up to five photos: one large photo and, if there are more, a row of
+// thumbnail buttons to switch between them (Tab, Enter/Space, or the arrow keys).
+// A placeholder is shown when there are no photos or a photo cannot be loaded (NFR-24).
 function createGallery(place) {
-    if (place.images.length === 0) {
+    const images = place.images.slice(0, MAX_PHOTOS);
+    if (images.length === 0) {
         return el('div', { className: 'gallery' }, [createPhotoPlaceholder(place.category)]);
     }
 
-    const photos = place.images.map((image) => el('img', {
-        src: image.imageUrl,
-        alt: image.caption || STRINGS.photoOf(place.name),
-        loading: 'lazy',
-    }));
-    return el('div', { className: `gallery gallery-${Math.min(photos.length, 5)}` }, photos);
+    const altText = (image) => image.caption || STRINGS.photoOf(place.name);
+    const frame = el('div', { className: 'gallery-main' });
+    const caption = el('figcaption', { className: 'gallery-caption' });
+    let current = 0;
+
+    function show(index) {
+        current = index;
+        const image = images[index];
+        const img = el('img', {
+            src: image.imageUrl,
+            alt: altText(image),
+            onError: () => img.replaceWith(createPhotoPlaceholder(place.category)),
+        });
+        frame.replaceChildren(img);
+        caption.textContent = image.caption ?? '';
+        caption.hidden = !image.caption;
+
+        for (const [i, button] of thumbButtons.entries()) {
+            button.setAttribute('aria-current', i === index ? 'true' : 'false');
+        }
+    }
+
+    const thumbButtons = images.length > 1 ? images.map((image, index) => {
+        const button = el('button', {
+            type: 'button',
+            className: 'gallery-thumb',
+            'aria-label': STRINGS.showPhoto(index + 1, images.length, altText(image)),
+            onClick: () => show(index),
+        });
+        const thumb = el('img', {
+            src: image.imageUrl,
+            alt: '', // the button's label already describes the photo
+            loading: 'lazy',
+            onError: () => thumb.replaceWith(el('span', { className: 'gallery-thumb-missing', 'aria-hidden': 'true', text: String(index + 1) })),
+        });
+        button.append(thumb);
+        return button;
+    }) : [];
+
+    // Left/Right (and Home/End) move between the thumbnails and show that photo.
+    const strip = thumbButtons.length > 0
+        ? el('div', {
+            className: 'gallery-strip',
+            role: 'group',
+            'aria-label': STRINGS.galleryLabel(place.name),
+            onKeydown: (event) => {
+                const keys = { ArrowLeft: current - 1, ArrowRight: current + 1, Home: 0, End: images.length - 1 };
+                if (!(event.key in keys)) return;
+                event.preventDefault();
+                const next = (keys[event.key] + images.length) % images.length;
+                show(next);
+                thumbButtons[next].focus();
+            },
+        }, thumbButtons)
+        : null;
+
+    show(0);
+    return el('figure', { className: 'gallery' }, [frame, caption, strip]);
 }
 
 // FR-09, NFR-25: open/closed shown with an icon AND a text label.

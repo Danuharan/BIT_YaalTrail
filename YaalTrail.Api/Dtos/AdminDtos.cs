@@ -65,12 +65,27 @@ public record AdminPlaceDto(
     string? TravelTips,
     bool IsPublished,
     List<AdminOpeningHourDto> OpeningHours,
-    List<PlaceImageDto> Images,
+    List<AdminPlaceImageDto> Images,
     DateTime CreatedAt,      // FR-48
     DateTime UpdatedAt,      // FR-48
     int? MaintainedByAdminId,
     string? MaintainedBy,
     int SavedPlanCount);     // FR-41: lets the UI warn that saved plans will be affected
+
+// ---------- FR-11, FR-45 photos ----------
+
+// One photo of a place, in display order (SortOrder 0 is shown first).
+public record AdminPlaceImageDto(int Id, string ImageUrl, string? Caption, int SortOrder);
+
+// POST api/admin/places/{id}/images (multipart/form-data): the file and an optional caption.
+public class AdminPhotoUploadForm
+{
+    [Required]
+    public IFormFile? File { get; set; }
+
+    [MaxLength(200)]
+    public string? Caption { get; set; }
+}
 
 // ---------- FR-46 categories ----------
 

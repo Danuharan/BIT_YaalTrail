@@ -63,7 +63,7 @@ public class AdminCategoriesController : ControllerBase
         }
     }
 
-    // FR-46: DELETE api/admin/categories/5 (409 if places still use it)
+    // FR-46: DELETE api/admin/categories/5 (409 if places still use it.........)
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

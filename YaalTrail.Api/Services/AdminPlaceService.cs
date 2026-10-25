@@ -312,7 +312,8 @@ public class AdminPlaceService : IAdminPlaceService
 
         var images = place.Images
             .OrderBy(i => i.SortOrder)
-            .Select(i => new PlaceImageDto(i.ImageUrl, i.Caption))
+            .ThenBy(i => i.Id)
+            .Select(i => new AdminPlaceImageDto(i.Id, i.ImageUrl, i.Caption, i.SortOrder))
             .ToList();
 
         return new AdminPlaceDto(

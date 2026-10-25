@@ -47,6 +47,13 @@ builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<IAdminPlaceService, AdminPlaceService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 
+// FR-45: photos go to the Supabase Storage bucket "place-photos" through its REST API.
+// NFR-15: Supabase:Url and Supabase:ServiceKey come only from user-secrets / environment.
+builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection(SupabaseOptions.SectionName));
+builder.Services.AddHttpClient<IPhotoStorage, SupabasePhotoStorage>(client => client.Timeout = TimeSpan.FromSeconds(30))
+    .RedactLoggedHeaders(_ => true); // never write the Authorization/apikey values to the log
+builder.Services.AddScoped<IAdminPlaceImageService, AdminPlaceImageService>();
+
 // FR-51, NFR-15: the signing key comes only from user-secrets / environment ("Jwt:Key").
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();

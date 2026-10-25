@@ -499,6 +499,96 @@ input[type="checkbox"] {
     font-weight: 800;
 }
 
+.field-error:empty::before {
+    content: none;
+}
+
+/* ---------- FR-45 photo editor ---------- */
+.photo-editor .section-title:focus {
+    outline: none;
+}
+
+.photo-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.photo-item {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+}
+
+.photo-thumb {
+    width: 6rem;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-small);
+    background: var(--bg);
+}
+
+.photo-broken {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.photo-text {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+/* The first photo is the cover: a text badge, not only a position. */
+.cover-badge {
+    justify-self: start;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--primary-tint);
+    color: var(--primary-hover);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.photo-upload {
+    display: grid;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.photo-upload input[type="file"] {
+    min-height: 2.75rem;
+    padding: 0.4rem 0;
+    max-width: 100%;
+}
+
+@media (max-width: 560px) {
+    .photo-item {
+        grid-template-columns: 5rem minmax(0, 1fr);
+    }
+
+    .photo-thumb {
+        width: 5rem;
+    }
+
+    .photo-item .row-actions {
+        grid-column: 1 / -1;
+    }
+}
+
 .field-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));

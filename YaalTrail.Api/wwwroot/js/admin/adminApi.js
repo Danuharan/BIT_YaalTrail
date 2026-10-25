@@ -44,7 +44,9 @@ function fieldKey(key) {
     return first ? first.charAt(0).toLowerCase() + first.slice(1) : '';
 }
 
-async function request(method, url, { body, auth = true } = {}) {
+// body: sent as JSON. form: a FormData sent as multipart/form-data (the browser sets
+// the Content-Type with its boundary itself, so it must not be set here).
+async function request(method, url, { body, form, auth = true } = {}) {
     const headers = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
 
@@ -62,7 +64,7 @@ async function request(method, url, { body, auth = true } = {}) {
         response = await fetch(url, {
             method,
             headers,
-            body: body === undefined ? undefined : JSON.stringify(body),
+            body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
         });
     } catch {
         throw new AdminApiError(0, null);
@@ -115,6 +117,25 @@ export function deletePlace(id, confirm) {
 // FR-47
 export function setPublished(id, published) {
     return request('PATCH', `/api/admin/places/${encodeURIComponent(id)}/${published ? 'publish' : 'unpublish'}`);
+}
+
+// ---------- FR-11, FR-45 photos ----------
+
+// Returns the new photo { id, imageUrl, caption, sortOrder }.
+export function uploadPlaceImage(placeId, file, caption) {
+    const form = new FormData();
+    form.append('file', file);
+    if (caption) form.append('caption', caption);
+    return request('POST', `/api/admin/places/${encodeURIComponent(placeId)}/images`, { form });
+}
+
+// imageIds: every photo id in the new order. Returns the photos in that order.
+export function reorderPlaceImages(placeId, imageIds) {
+    return request('PUT', `/api/admin/places/${encodeURIComponent(placeId)}/images/order`, { body: imageIds });
+}
+
+export function deletePlaceImage(placeId, imageId) {
+    return request('DELETE', `/api/admin/places/${encodeURIComponent(placeId)}/images/${encodeURIComponent(imageId)}`);
 }
 
 // ---------- FR-46 categories ----------

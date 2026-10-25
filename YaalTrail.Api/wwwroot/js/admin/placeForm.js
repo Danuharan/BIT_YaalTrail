@@ -6,6 +6,7 @@ import { ADMIN_STRINGS as S, DAYS } from './adminStrings.js';
 import { createPlace, getCategories, getPlace, updatePlace } from './adminApi.js';
 import { errorMessage, formatDateTime } from './adminFormat.js';
 import { statusBadge } from './placesView.js';
+import { createPhotoEditor } from './photoEditor.js';
 
 // Text inputs and their ids. Keys match the request field names (AdminPlaceRequestDto).
 const FIELD_IDS = {
@@ -47,6 +48,10 @@ export async function showPlaceForm(container, placeId, ctx) {
 
     const form = buildForm(place, categories);
     if (place) root.append(createMeta(place));
+    // FR-45: photos need the place id, so they can only be added once the place exists.
+    root.append(place
+        ? createPhotoEditor(place, ctx)
+        : el('p', { className: 'message message-info', text: S.photosAfterSave }));
     root.append(form.element);
 
     form.element.addEventListener('submit', async (event) => {

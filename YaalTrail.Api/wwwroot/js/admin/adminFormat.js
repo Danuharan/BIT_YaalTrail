@@ -23,6 +23,7 @@ export function errorMessage(error) {
     if (error.status === 0) return ADMIN_STRINGS.networkError;
     if (error.status === 403) return ADMIN_STRINGS.forbidden;
     if (error.status === 404) return ADMIN_STRINGS.notFound;
+    if (error.status === 502 && error.detail) return error.detail; // photo storage problem, explained by the server
     if (error.status >= 500) return ADMIN_STRINGS.serverError;
     return error.detail || error.messages[0] || ADMIN_STRINGS.serverError;
 }
