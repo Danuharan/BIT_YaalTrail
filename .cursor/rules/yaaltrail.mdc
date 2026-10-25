@@ -1,0 +1,11 @@
+---
+description: YaalTrail project rules
+alwaysApply: true
+---
+- Stack: ASP.NET Core 8 Web API (C#), EF Core + Npgsql, Supabase PostgreSQL, plain HTML/CSS/JS + Leaflet.js in YaalTrail.Api/wwwroot (NO frontend framework).
+- Layers: Controllers (thin) -> Services (all business logic) -> EF Core DbContext. No logic in controllers.
+- Reference location Chundikuli (9.6548, 80.0307), radius 25 km, average speed km/h: read from appsettings "Planner" section, never hardcode.
+- Secrets only via user-secrets. Never write passwords or connection strings in code or committed files.
+- Implement ALL SRS features: High priority first, then Medium. Cite FR/NFR numbers in code comments.
+- Keep code simple and readable; I must explain it in a viva.
+- Do not run database migrations. I run Add-Migration / Update-Database myself in Visual Studio.
